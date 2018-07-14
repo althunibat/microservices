@@ -1,0 +1,12 @@
+﻿{
+  "profiles": {
+    "SampleApi": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS":"http://+:8080"
+      }
+    }
+  }
+}

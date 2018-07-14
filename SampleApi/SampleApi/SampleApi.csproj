@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netcoreapp2.1\SampleApi.xml</DocumentationFile>
+    <NoWarn>1701;1702;1705;1591</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netcoreapp2.1\SampleApi.xml</DocumentationFile>
+    <NoWarn>1701;1702;1705;1591</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Folder Include="wwwroot\" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.App" Version="2.1.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Framework\Framework.Api\Framework.Api.csproj" />
+    <ProjectReference Include="..\..\Framework\Framework.Common\Framework.Common.csproj" />
+    <ProjectReference Include="..\..\Framework\Framework.Data.Ef\Framework.Data.Ef.csproj" />
+    <ProjectReference Include="..\..\Framework\Framework.Model\Framework.Model.csproj" />
+    <ProjectReference Include="..\..\Framework\Framework.Services.Contracts\Framework.Services.Contracts.csproj" />
+    <ProjectReference Include="..\..\Framework\Framework.Services.Core\Framework.Services.Core.csproj" />
+    <ProjectReference Include="..\..\Microsoft\Microsoft.Extensions.HealthChecks.SqlServer\Microsoft.Extensions.HealthChecks.SqlServer.csproj" />
+  </ItemGroup>
+</Project>
