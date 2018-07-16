@@ -4,10 +4,8 @@
 
 using System.Collections.Generic;
 
-namespace Identity.Server.Quickstart.Consent
-{
-    public class ConsentViewModel : ConsentInputModel
-    {
+namespace Identity.Server.Quickstart.Consent {
+    public class ConsentViewModel : ConsentInputModel {
         public string ClientName { get; set; }
         public string ClientUrl { get; set; }
         public string ClientLogoUrl { get; set; }

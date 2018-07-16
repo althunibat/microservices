@@ -5,6 +5,7 @@ namespace Framework.Services.Contracts.Http {
         public SuccessResponse() {
             TimeStamp = DateTimeOffset.Now;
         }
+
         public DateTimeOffset TimeStamp { get; }
         public bool Success => true;
     }

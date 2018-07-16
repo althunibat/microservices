@@ -1,17 +1,13 @@
 ﻿using System.Collections.Generic;
 using Framework.Model;
 
-namespace SampleApi.V1.Data.Model
-{
-    public class Person:Entity
-    {
-        public Person(long id) : base(id)
-        {
+namespace SampleApi.V1.Data.Model {
+    public class Person : Entity {
+        public Person(long id) : base(id) {
             Addresses = new List<Address>();
-         }
+        }
 
-        protected Person()
-        {
+        protected Person() {
             Addresses = new List<Address>();
         }
 

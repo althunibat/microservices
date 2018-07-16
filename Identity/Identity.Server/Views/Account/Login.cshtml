@@ -1,17 +1,15 @@
-﻿@using Identity.Server.Quickstart.Account
-@model Identity.Server.Quickstart.Account.LoginViewModel
+﻿@model Identity.Server.Quickstart.Account.LoginViewModel
 
 <div class="login-page">
     <div class="page-header">
         <h1>Login</h1>
     </div>
 
-  @await Html.PartialAsync("_ValidationSummary")
+    @await Html.PartialAsync("_ValidationSummary")
 
     <div class="row">
 
-        @if (Model.EnableLocalLogin)
-        {
+        @if (Model.EnableLocalLogin) {
             <div class="col-sm-6">
                 <div class="panel panel-default">
                     <div class="panel-heading">
@@ -20,7 +18,7 @@
                     <div class="panel-body">
 
                         <form asp-route="Login">
-                            <input type="hidden" asp-for="ReturnUrl" />
+                            <input type="hidden" asp-for="ReturnUrl"/>
 
                             <fieldset>
                                 <div class="form-group">
@@ -31,8 +29,7 @@
                                     <label asp-for="Password"></label>
                                     <input type="password" class="form-control" placeholder="Password" asp-for="Password" autocomplete="off">
                                 </div>
-                                @if (Model.AllowRememberLogin)
-                                {
+                                @if (Model.AllowRememberLogin) {
                                     <div class="form-group login-remember">
                                         <label asp-for="RememberLogin">
                                             <input asp-for="RememberLogin">
@@ -56,8 +53,7 @@
             </div>
         }
 
-        @if (Model.VisibleExternalProviders.Any())
-        {
+        @if (Model.VisibleExternalProviders.Any()) {
             <div class="col-md-6 col-sm-6 external-providers">
                 <div class="panel panel-default">
                     <div class="panel-heading">
@@ -65,8 +61,7 @@
                     </div>
                     <div class="panel-body">
                         <ul class="list-inline">
-                            @foreach (var provider in Model.VisibleExternalProviders)
-                            {
+                            @foreach (var provider in Model.VisibleExternalProviders) {
                                 <li>
                                     <a class="btn btn-default"
                                        asp-action="ExternalLogin"
@@ -82,8 +77,7 @@
             </div>
         }
 
-        @if (!Model.EnableLocalLogin && !Model.VisibleExternalProviders.Any())
-        {
+        @if (!Model.EnableLocalLogin && !Model.VisibleExternalProviders.Any()) {
             <div class="alert alert-warning">
                 <strong>Invalid login request</strong>
                 There are no login schemes configured for this client.

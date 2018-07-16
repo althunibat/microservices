@@ -1,6 +1,3 @@
-﻿namespace Framework.Services.Contracts.Messaging
-{
-    public interface ICommand:IMessage
-    {
-    }
+﻿namespace Framework.Services.Contracts.Messaging {
+    public interface ICommand : IMessage { }
 }

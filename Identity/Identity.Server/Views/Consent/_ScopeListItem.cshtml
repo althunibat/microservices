@@ -1,5 +1,4 @@
-﻿@using Identity.Server.Quickstart.Consent
-@model Identity.Server.Quickstart.Consent.ScopeViewModel
+﻿@model Identity.Server.Quickstart.Consent.ScopeViewModel
 
 <li class="list-group-item">
     <label>
@@ -9,25 +8,23 @@
                id="scopes_@Model.Name"
                value="@Model.Name"
                checked="@Model.Checked"
-               disabled="@Model.Required" />
-        @if (Model.Required)
-        {
+               disabled="@Model.Required"/>
+        @if (Model.Required) {
             <input type="hidden"
                    name="ScopesConsented"
-                   value="@Model.Name" />
+                   value="@Model.Name"/>
         }
         <strong>@Model.DisplayName</strong>
-        @if (Model.Emphasize)
-        {
+        @if (Model.Emphasize) {
             <span class="glyphicon glyphicon-exclamation-sign"></span>
         }
     </label>
-    @if (Model.Required)
-    {
-        <span><em>(required)</em></span>
+    @if (Model.Required) {
+        <span>
+            <em>(required)</em>
+        </span>
     }
-    @if (Model.Description != null)
-    {
+    @if (Model.Description != null) {
         <div class="consent-description">
             <label for="scopes_@Model.Name">@Model.Description</label>
         </div>

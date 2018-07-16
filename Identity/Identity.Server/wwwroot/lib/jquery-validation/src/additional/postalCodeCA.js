@@ -11,6 +11,8 @@
  * @type Boolean
  * @cat Plugins/Validate/Methods
  */
-$.validator.addMethod( "postalCodeCA", function( value, element ) {
-	return this.optional( element ) || /^[ABCEGHJKLMNPRSTVXY]\d[A-Z] \d[A-Z]\d$/.test( value );
-}, "Please specify a valid postal code" );
+$.validator.addMethod("postalCodeCA",
+    function(value, element) {
+        return this.optional(element) || /^[ABCEGHJKLMNPRSTVXY]\d[A-Z] \d[A-Z]\d$/.test(value);
+    },
+    "Please specify a valid postal code");

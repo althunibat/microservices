@@ -1,5 +1,5 @@
 ﻿FROM  microsoft/dotnet:aspnetcore-runtime
-LABEL Author="Hamza Althunibat <hamza.althunibat@moe.gov.ae>"
+LABEL Author="Hamza Althunibat <althunibat@outlook.com>"
 
 WORKDIR /app
 COPY ./out/ .

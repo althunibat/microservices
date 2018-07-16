@@ -1,8 +1,6 @@
-﻿namespace Framework.Common
-{
-    public enum SortDirection
-    {
+﻿namespace Framework.Common {
+    public enum SortDirection {
         Ascending,
-        Descending,
+        Descending
     }
 }

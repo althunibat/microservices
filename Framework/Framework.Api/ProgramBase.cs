@@ -13,71 +13,63 @@ using Serilog;
 using Serilog.Events;
 using Winton.Extensions.Configuration.Consul;
 
-namespace Framework.Api
-{
-    public static class ProgramBase<TStart> where TStart : StartupBase<TStart>
-    {
-        public static readonly CancellationTokenSource ConsulConfigCancellationTokenSource = new CancellationTokenSource();
+namespace Framework.Api {
+    public static class ProgramBase<TStart> where TStart : StartupBase<TStart> {
+        public static readonly CancellationTokenSource ConsulConfigCancellationTokenSource =
+            new CancellationTokenSource();
+
         private static IMetricsRoot Metrics { get; set; }
-        public static int Run(string[] args)
-        {
-            try
-            {
+
+        public static int Run(string[] args) {
+            try {
                 BuildWebHost(args).Run();
                 return 0;
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 const string str = "Host terminated unexpectedly";
                 Log.Fatal(ex, str);
                 return 1;
             }
-            finally
-            {
+            finally {
                 Log.CloseAndFlush();
             }
         }
 
-        private static IWebHost BuildWebHost(string[] args)
-        {
+        private static IWebHost BuildWebHost(string[] args) {
             Metrics = AppMetrics.CreateDefaultBuilder()
                 .OutputMetrics.AsPrometheusProtobuf()
                 .Build();
             var builder = new WebHostBuilder()
                 .UseKestrel(options => options.AddServerHeader = false)
                 .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseMetrics(options =>
-                {
+                .UseMetrics(options => {
                     options.EndpointOptions = endpointsOptions => {
                         endpointsOptions.MetricsTextEndpointEnabled = false;
-                        endpointsOptions.MetricsEndpointOutputFormatter = Metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
+                        endpointsOptions.MetricsEndpointOutputFormatter = Metrics.OutputMetricsFormatters
+                            .GetType<MetricsPrometheusProtobufOutputFormatter>();
                     };
                 })
-                .ConfigureAppConfiguration((hostingContext, config) =>
-                {
+                .ConfigureAppConfiguration((hostingContext, config) => {
                     var hostingEnvironment = hostingContext.HostingEnvironment;
                     config.AddJsonFile("appsettings.json", true, true).AddJsonFile(
                         string.Format("appsettings.{0}.json", hostingEnvironment.EnvironmentName), true, true);
 
-                    if (hostingEnvironment.IsDevelopment())
-                    {
+                    if (hostingEnvironment.IsDevelopment()) {
                         var assembly = Assembly.Load(new AssemblyName(hostingEnvironment.ApplicationName));
                         if (assembly != null)
                             config.AddUserSecrets(assembly, true);
                     }
 
                     config.AddEnvironmentVariables();
-                    config.AddDockerSecrets(cfg => { cfg.Optional = true;});
+                    config.AddDockerSecrets(cfg => { cfg.Optional = true; });
                     if (args != null)
                         config.AddCommandLine(args);
                     var jsonCfg = config.Build();
                     config.AddConsul(jsonCfg["ConsulOptions:ServiceName"], ConsulConfigCancellationTokenSource.Token,
-                        opt =>
-                        {
+                        opt => {
                             opt.ReloadOnChange = true;
                             opt.Optional = true;
-                            opt.ConsulConfigurationOptions = cfg =>
-                            {
+                            opt.ConsulConfigurationOptions = cfg => {
                                 cfg.Address = new Uri(jsonCfg["ConsulOptions:HttpEndpoint"]);
                                 cfg.Datacenter = jsonCfg["ConsulOptions:Datacenter"];
                             };
@@ -93,8 +85,7 @@ namespace Framework.Api
             return builder.Build();
         }
 
-        private static void InitializeLogs(IConfiguration config)
-        {
+        private static void InitializeLogs(IConfiguration config) {
             var format = "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level}] [" + Environment.MachineName +
                          "] {SourceContext}  [{Address}] [{RequestId}] {Message:lj}{NewLine}{Exception}{NewLine}";
             Log.Logger = new LoggerConfiguration()

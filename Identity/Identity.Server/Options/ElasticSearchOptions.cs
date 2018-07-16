@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Identity.Server.Options
-{
-    public class ElasticSearchOptions
-    {
+namespace Identity.Server.Options {
+    public class ElasticSearchOptions {
         /// <summary>
-        /// ; separated Urls
+        ///     ; separated Urls
         /// </summary>
         public string Urls { get; set; }
 

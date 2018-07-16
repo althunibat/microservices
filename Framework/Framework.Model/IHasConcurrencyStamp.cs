@@ -1,7 +1,5 @@
-﻿namespace Framework.Model
-{
-    public interface IHasConcurrencyStamp
-    {
+﻿namespace Framework.Model {
+    public interface IHasConcurrencyStamp {
         string ConcurrencyStamp { get; set; }
     }
 }

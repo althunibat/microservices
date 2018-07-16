@@ -2,10 +2,8 @@
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
 
-namespace Identity.Server.Quickstart.Consent
-{
-    public class ProcessConsentResult
-    {
+namespace Identity.Server.Quickstart.Consent {
+    public class ProcessConsentResult {
         public bool IsRedirect => RedirectUri != null;
         public string RedirectUri { get; set; }
 

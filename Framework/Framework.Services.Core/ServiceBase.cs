@@ -9,52 +9,47 @@ using MassTransit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-namespace Framework.Services.Core
-{
+namespace Framework.Services.Core {
     public abstract class ServiceBase<TService>
-    where TService:ServiceBase<TService>
-    {
-        protected readonly ILogger Logger;
+        where TService : ServiceBase<TService> {
         protected readonly IBus Bus;
         protected readonly IHttpContextAccessor HttpAccessor;
-        protected ServiceBase(ILogger<TService> logger, IBus bus, IHttpContextAccessor httpAccessor)
-        {
+        protected readonly ILogger Logger;
+
+        protected ServiceBase(ILogger<TService> logger, IBus bus, IHttpContextAccessor httpAccessor) {
             Logger = logger;
             Bus = bus;
             HttpAccessor = httpAccessor;
         }
 
-        protected static string GetCallingMember([CallerMemberName] string member = "")
-        {
+        protected static string GetCallingMember([CallerMemberName] string member = "") {
             return member;
         }
 
-        protected string GetRemoteIp()
-        {
+        protected string GetRemoteIp() {
             return HttpAccessor.HttpContext.Connection.RemoteIpAddress?.ToString();
         }
-        protected string GetRequestId()
-        {
+
+        protected string GetRequestId() {
             return HttpAccessor.HttpContext.TraceIdentifier;
         }
 
-        protected FailureResponse HandleValidationErrors(ValidationResult result)
-        {
+        protected FailureResponse HandleValidationErrors(ValidationResult result) {
             Logger.LogWarning(SharedResource.InvalidArgumentLog, GetCallingMember());
             Logger.LogInformation(SharedResource.EndMethodExecution, GetCallingMember());
             return new FailureResponse(result.Errors
                 .Select(e =>
-                    new Error(1001, e.ErrorMessage) { Description = string.Concat(e.PropertyName, ":", e.AttemptedValue) }).ToList());
-
+                    new Error(1001, e.ErrorMessage) {
+                        Description = string.Concat(e.PropertyName, ":", e.AttemptedValue)
+                    }).ToList());
         }
 
-        protected FailureResponse HandleException(Exception e)
-        {
+        protected FailureResponse HandleException(Exception e) {
             Logger.LogCritical(SharedResource.UnexpectedErrorLog,
                 GetCallingMember(), e);
             Logger.LogInformation(SharedResource.EndMethodExecution, GetCallingMember());
             var error = new Error(1001, SharedResource.UnexpectedError);
-            return new FailureResponse(new List<Error> { error });
+            return new FailureResponse(new List<Error> {error});
         }
     }
 }

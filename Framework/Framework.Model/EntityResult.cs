@@ -1,17 +1,13 @@
 ﻿using System.Collections.Generic;
 using Framework.Common;
 
-namespace Framework.Model
-{
-    public class EntityResult
-    {
-        private EntityResult(params Error[] errors)
-        {
+namespace Framework.Model {
+    public class EntityResult {
+        private EntityResult(params Error[] errors) {
             Errors = errors;
         }
 
-        private EntityResult()
-        {
+        private EntityResult() {
             Succeeded = true;
         }
 
@@ -25,7 +21,8 @@ namespace Framework.Model
 
         public static EntityResult Success { get; } = new EntityResult();
 
-        public static EntityResult Failed(params Error[] errors) => new EntityResult(errors);
-
+        public static EntityResult Failed(params Error[] errors) {
+            return new EntityResult(errors);
+        }
     }
 }

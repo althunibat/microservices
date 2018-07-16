@@ -1,16 +1,10 @@
 ﻿using Framework.Model;
 
-namespace SampleApi.V1.Data.Model
-{
-    public class Address:Entity
-    {
-        public Address(long id) : base(id)
-        {
-        }
+namespace SampleApi.V1.Data.Model {
+    public class Address : Entity {
+        public Address(long id) : base(id) { }
 
-        protected Address()
-        {
-        }
+        protected Address() { }
 
         public AddressType Type { get; set; }
         public string Country { get; set; }

@@ -10,6 +10,7 @@ using System.Security.Principal;
 using System.Threading.Tasks;
 using Identity.Server.Models;
 using IdentityModel;
+using IdentityServer4;
 using IdentityServer4.Events;
 using IdentityServer4.Extensions;
 using IdentityServer4.Models;
@@ -20,17 +21,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Identity.Server.Quickstart.Account
-{
+namespace Identity.Server.Quickstart.Account {
     [SecurityHeaders]
-    public class AccountController : Controller
-    {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly IIdentityServerInteractionService _interaction;
+    public class AccountController : Controller {
         private readonly IClientStore _clientStore;
-        private readonly IAuthenticationSchemeProvider _schemeProvider;
         private readonly IEventService _events;
+        private readonly IIdentityServerInteractionService _interaction;
+        private readonly IAuthenticationSchemeProvider _schemeProvider;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
@@ -38,8 +37,7 @@ namespace Identity.Server.Quickstart.Account
             IIdentityServerInteractionService interaction,
             IClientStore clientStore,
             IAuthenticationSchemeProvider schemeProvider,
-            IEventService events)
-        {
+            IEventService events) {
             _userManager = userManager;
             _signInManager = signInManager;
             _interaction = interaction;
@@ -49,65 +47,52 @@ namespace Identity.Server.Quickstart.Account
         }
 
         /// <summary>
-        /// Show login page
+        ///     Show login page
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> Login(string returnUrl)
-        {
+        public async Task<IActionResult> Login(string returnUrl) {
             // build a model so we know what to show on the login page
             var vm = await BuildLoginViewModelAsync(returnUrl);
 
-            if (vm.IsExternalLoginOnly)
-            {
-                // we only have one option for logging in and it's an external provider
-                return await ExternalLogin(vm.ExternalLoginScheme, returnUrl);
-            }
+            if (vm.IsExternalLoginOnly) return await ExternalLogin(vm.ExternalLoginScheme, returnUrl);
 
             return View(vm);
         }
 
         /// <summary>
-        /// Handle postback from username/password login
+        ///     Handle postback from username/password login
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginInputModel model, string button)
-        {
-            if (button != "login")
-            {
+        public async Task<IActionResult> Login(LoginInputModel model, string button) {
+            if (button != "login") {
                 // the user clicked the "cancel" button
                 var context = await _interaction.GetAuthorizationContextAsync(model.ReturnUrl);
-                if (context != null)
-                {
+                if (context != null) {
                     // if the user cancels, send a result back into IdentityServer as if they 
                     // denied the consent (even if this client does not require consent).
                     // this will send back an access denied OIDC error response to the client.
                     await _interaction.GrantConsentAsync(context, ConsentResponse.Denied);
-                    
+
                     // we can trust model.ReturnUrl since GetAuthorizationContextAsync returned non-null
                     return Redirect(model.ReturnUrl);
                 }
-                else
-                {
-                    // since we don't have a valid context, then we just go back to the home page
-                    return Redirect("~/");
-                }
+
+                // since we don't have a valid context, then we just go back to the home page
+                return Redirect("~/");
             }
 
-            if (ModelState.IsValid)
-            {
-                var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberLogin, lockoutOnFailure: true);
-                if (result.Succeeded)
-                {
+            if (ModelState.IsValid) {
+                var result =
+                    await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberLogin, true);
+                if (result.Succeeded) {
                     var user = await _userManager.FindByNameAsync(model.Username);
                     await _events.RaiseAsync(new UserLoginSuccessEvent(user.UserName, user.Id, user.UserName));
 
                     // make sure the returnUrl is still valid, and if so redirect back to authorize endpoint or a local page
                     // the IsLocalUrl check is only necessary if you want to support additional local pages, otherwise IsValidReturnUrl is more strict
                     if (_interaction.IsValidReturnUrl(model.ReturnUrl) || Url.IsLocalUrl(model.ReturnUrl))
-                    {
                         return Redirect(model.ReturnUrl);
-                    }
 
                     return Redirect("~/");
                 }
@@ -123,54 +108,36 @@ namespace Identity.Server.Quickstart.Account
         }
 
         /// <summary>
-        /// initiate roundtrip to external authentication provider
+        ///     initiate roundtrip to external authentication provider
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> ExternalLogin(string provider, string returnUrl)
-        {
+        public async Task<IActionResult> ExternalLogin(string provider, string returnUrl) {
             if (AccountOptions.WindowsAuthenticationSchemeName == provider)
-            {
-                // windows authentication needs special handling
                 return await ProcessWindowsLoginAsync(returnUrl);
-            }
-            else
-            {
-                // start challenge and roundtrip the return URL and 
-                var props = new AuthenticationProperties()
-                {
-                    RedirectUri = Url.Action("ExternalLoginCallback"),
-                    Items =
-                    {
-                        { "returnUrl", returnUrl },
-                        { "scheme", provider },
-                    }
-                };
-                return Challenge(props, provider);
-            }
+
+            // start challenge and roundtrip the return URL and 
+            var props = new AuthenticationProperties {
+                RedirectUri = Url.Action("ExternalLoginCallback"),
+                Items = {
+                    {"returnUrl", returnUrl},
+                    {"scheme", provider}
+                }
+            };
+            return Challenge(props, provider);
         }
 
         /// <summary>
-        /// Post processing of external authentication
+        ///     Post processing of external authentication
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> ExternalLoginCallback()
-        {
+        public async Task<IActionResult> ExternalLoginCallback() {
             // read external identity from the temporary cookie
             var result = await HttpContext.AuthenticateAsync(IdentityConstants.ExternalScheme);
-            if (result?.Succeeded != true)
-            {
-                throw new Exception("External authentication error");
-            }
+            if (result?.Succeeded != true) throw new Exception("External authentication error");
 
             // lookup our user and external provider info
             var (user, provider, providerUserId, claims) = await FindUserFromExternalProviderAsync(result);
-            if (user == null)
-            {
-                // this might be where you might initiate a custom workflow for user registration
-                // in this sample we don't show how that would be done, as our sample implementation
-                // simply auto-provisions new external user
-                user = await AutoProvisionUserAsync(provider, providerUserId, claims);
-            }
+            if (user == null) user = await AutoProvisionUserAsync(provider, providerUserId, claims);
 
             // this allows us to collect any additonal claims or properties
             // for the specific prtotocols used and store them in the local auth cookie.
@@ -195,45 +162,34 @@ namespace Identity.Server.Quickstart.Account
 
             // validate return URL and redirect back to authorization endpoint or a local page
             var returnUrl = result.Properties.Items["returnUrl"];
-            if (_interaction.IsValidReturnUrl(returnUrl) || Url.IsLocalUrl(returnUrl))
-            {
-                return Redirect(returnUrl);
-            }
+            if (_interaction.IsValidReturnUrl(returnUrl) || Url.IsLocalUrl(returnUrl)) return Redirect(returnUrl);
 
             return Redirect("~/");
         }
 
         /// <summary>
-        /// Show logout page
+        ///     Show logout page
         /// </summary>
         [HttpGet]
-        public async Task<IActionResult> Logout(string logoutId)
-        {
+        public async Task<IActionResult> Logout(string logoutId) {
             // build a model so the logout page knows what to display
             var vm = await BuildLogoutViewModelAsync(logoutId);
 
-            if (vm.ShowLogoutPrompt == false)
-            {
-                // if the request for logout was properly authenticated from IdentityServer, then
-                // we don't need to show the prompt and can just log the user out directly.
-                return await Logout(vm);
-            }
+            if (vm.ShowLogoutPrompt == false) return await Logout(vm);
 
             return View(vm);
         }
 
         /// <summary>
-        /// Handle logout page postback
+        ///     Handle logout page postback
         /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Logout(LogoutInputModel model)
-        {
+        public async Task<IActionResult> Logout(LogoutInputModel model) {
             // build a model so the logged out page knows what to display
             var vm = await BuildLoggedOutViewModelAsync(model.LogoutId);
 
-            if (User?.Identity.IsAuthenticated == true)
-            {
+            if (User?.Identity.IsAuthenticated == true) {
                 // delete local authentication cookie
                 await _signInManager.SignOutAsync();
 
@@ -242,15 +198,14 @@ namespace Identity.Server.Quickstart.Account
             }
 
             // check if we need to trigger sign-out at an upstream identity provider
-            if (vm.TriggerExternalSignout)
-            {
+            if (vm.TriggerExternalSignout) {
                 // build a return URL so the upstream provider will redirect back
                 // to us after the user has logged out. this allows us to then
                 // complete our single sign-out processing.
-                string url = Url.Action("Logout", new { logoutId = vm.LogoutId });
+                var url = Url.Action("Logout", new {logoutId = vm.LogoutId});
 
                 // this triggers a redirect to the external provider for sign-out
-                return SignOut(new AuthenticationProperties { RedirectUri = url }, vm.ExternalAuthenticationScheme);
+                return SignOut(new AuthenticationProperties {RedirectUri = url}, vm.ExternalAuthenticationScheme);
             }
 
             return View("LoggedOut", vm);
@@ -259,50 +214,41 @@ namespace Identity.Server.Quickstart.Account
         /*****************************************/
         /* helper APIs for the AccountController */
         /*****************************************/
-        private async Task<LoginViewModel> BuildLoginViewModelAsync(string returnUrl)
-        {
+        private async Task<LoginViewModel> BuildLoginViewModelAsync(string returnUrl) {
             var context = await _interaction.GetAuthorizationContextAsync(returnUrl);
             if (context?.IdP != null)
-            {
-                // this is meant to short circuit the UI and only trigger the one external IdP
-                return new LoginViewModel
-                {
+                return new LoginViewModel {
                     EnableLocalLogin = false,
                     ReturnUrl = returnUrl,
                     Username = context?.LoginHint,
-                    ExternalProviders = new ExternalProvider[] { new ExternalProvider { AuthenticationScheme = context.IdP } }
+                    ExternalProviders = new[] {new ExternalProvider {AuthenticationScheme = context.IdP}}
                 };
-            }
 
             var schemes = await _schemeProvider.GetAllSchemesAsync();
 
             var providers = schemes
                 .Where(x => x.DisplayName != null ||
-                            (x.Name.Equals(AccountOptions.WindowsAuthenticationSchemeName, StringComparison.OrdinalIgnoreCase))
+                            x.Name.Equals(AccountOptions.WindowsAuthenticationSchemeName,
+                                StringComparison.OrdinalIgnoreCase)
                 )
-                .Select(x => new ExternalProvider
-                {
+                .Select(x => new ExternalProvider {
                     DisplayName = x.DisplayName,
                     AuthenticationScheme = x.Name
                 }).ToList();
 
             var allowLocal = true;
-            if (context?.ClientId != null)
-            {
+            if (context?.ClientId != null) {
                 var client = await _clientStore.FindEnabledClientByIdAsync(context.ClientId);
-                if (client != null)
-                {
+                if (client != null) {
                     allowLocal = client.EnableLocalLogin;
 
                     if (client.IdentityProviderRestrictions != null && client.IdentityProviderRestrictions.Any())
-                    {
-                        providers = providers.Where(provider => client.IdentityProviderRestrictions.Contains(provider.AuthenticationScheme)).ToList();
-                    }
+                        providers = providers.Where(provider =>
+                            client.IdentityProviderRestrictions.Contains(provider.AuthenticationScheme)).ToList();
                 }
             }
 
-            return new LoginViewModel
-            {
+            return new LoginViewModel {
                 AllowRememberLogin = AccountOptions.AllowRememberLogin,
                 EnableLocalLogin = allowLocal && AccountOptions.AllowLocalLogin,
                 ReturnUrl = returnUrl,
@@ -311,28 +257,24 @@ namespace Identity.Server.Quickstart.Account
             };
         }
 
-        private async Task<LoginViewModel> BuildLoginViewModelAsync(LoginInputModel model)
-        {
+        private async Task<LoginViewModel> BuildLoginViewModelAsync(LoginInputModel model) {
             var vm = await BuildLoginViewModelAsync(model.ReturnUrl);
             vm.Username = model.Username;
             vm.RememberLogin = model.RememberLogin;
             return vm;
         }
 
-        private async Task<LogoutViewModel> BuildLogoutViewModelAsync(string logoutId)
-        {
-            var vm = new LogoutViewModel { LogoutId = logoutId, ShowLogoutPrompt = AccountOptions.ShowLogoutPrompt };
+        private async Task<LogoutViewModel> BuildLogoutViewModelAsync(string logoutId) {
+            var vm = new LogoutViewModel {LogoutId = logoutId, ShowLogoutPrompt = AccountOptions.ShowLogoutPrompt};
 
-            if (User?.Identity.IsAuthenticated != true)
-            {
+            if (User?.Identity.IsAuthenticated != true) {
                 // if the user is not authenticated, then just show logged out page
                 vm.ShowLogoutPrompt = false;
                 return vm;
             }
 
             var context = await _interaction.GetLogoutContextAsync(logoutId);
-            if (context?.ShowSignoutPrompt == false)
-            {
+            if (context?.ShowSignoutPrompt == false) {
                 // it's safe to automatically sign-out
                 vm.ShowLogoutPrompt = false;
                 return vm;
@@ -343,13 +285,11 @@ namespace Identity.Server.Quickstart.Account
             return vm;
         }
 
-        private async Task<LoggedOutViewModel> BuildLoggedOutViewModelAsync(string logoutId)
-        {
+        private async Task<LoggedOutViewModel> BuildLoggedOutViewModelAsync(string logoutId) {
             // get context information (client name, post logout redirect URI and iframe for federated signout)
             var logout = await _interaction.GetLogoutContextAsync(logoutId);
 
-            var vm = new LoggedOutViewModel
-            {
+            var vm = new LoggedOutViewModel {
                 AutomaticRedirectAfterSignOut = AccountOptions.AutomaticRedirectAfterSignOut,
                 PostLogoutRedirectUri = logout?.PostLogoutRedirectUri,
                 ClientName = string.IsNullOrEmpty(logout?.ClientName) ? logout?.ClientId : logout?.ClientName,
@@ -357,21 +297,12 @@ namespace Identity.Server.Quickstart.Account
                 LogoutId = logoutId
             };
 
-            if (User?.Identity.IsAuthenticated == true)
-            {
+            if (User?.Identity.IsAuthenticated == true) {
                 var idp = User.FindFirst(JwtClaimTypes.IdentityProvider)?.Value;
-                if (idp != null && idp != IdentityServer4.IdentityServerConstants.LocalIdentityProvider)
-                {
+                if (idp != null && idp != IdentityServerConstants.LocalIdentityProvider) {
                     var providerSupportsSignout = await HttpContext.GetSchemeSupportsSignOutAsync(idp);
-                    if (providerSupportsSignout)
-                    {
-                        if (vm.LogoutId == null)
-                        {
-                            // if there's no current logout context, we need to create one
-                            // this captures necessary info from the current logged in user
-                            // before we signout and redirect away to the external IdP for signout
-                            vm.LogoutId = await _interaction.CreateLogoutContextAsync();
-                        }
+                    if (providerSupportsSignout) {
+                        if (vm.LogoutId == null) vm.LogoutId = await _interaction.CreateLogoutContextAsync();
 
                         vm.ExternalAuthenticationScheme = idp;
                     }
@@ -381,22 +312,18 @@ namespace Identity.Server.Quickstart.Account
             return vm;
         }
 
-        private async Task<IActionResult> ProcessWindowsLoginAsync(string returnUrl)
-        {
+        private async Task<IActionResult> ProcessWindowsLoginAsync(string returnUrl) {
             // see if windows auth has already been requested and succeeded
             var result = await HttpContext.AuthenticateAsync(AccountOptions.WindowsAuthenticationSchemeName);
-            if (result?.Principal is WindowsPrincipal wp)
-            {
+            if (result?.Principal is WindowsPrincipal wp) {
                 // we will issue the external cookie and then redirect the
                 // user back to the external callback, in essence, tresting windows
                 // auth the same as any other external authentication mechanism
-                var props = new AuthenticationProperties()
-                {
+                var props = new AuthenticationProperties {
                     RedirectUri = Url.Action("ExternalLoginCallback"),
-                    Items =
-                    {
-                        { "returnUrl", returnUrl },
-                        { "scheme", AccountOptions.WindowsAuthenticationSchemeName },
+                    Items = {
+                        {"returnUrl", returnUrl},
+                        {"scheme", AccountOptions.WindowsAuthenticationSchemeName}
                     }
                 };
 
@@ -405,8 +332,7 @@ namespace Identity.Server.Quickstart.Account
                 id.AddClaim(new Claim(JwtClaimTypes.Name, wp.Identity.Name));
 
                 // add the groups as claims -- be careful if the number of groups is too large
-                if (AccountOptions.IncludeWindowsGroups)
-                {
+                if (AccountOptions.IncludeWindowsGroups) {
                     var wi = wp.Identity as WindowsIdentity;
                     var groups = wi.Groups.Translate(typeof(NTAccount));
                     var roles = groups.Select(x => new Claim(JwtClaimTypes.Role, x.Value));
@@ -419,18 +345,15 @@ namespace Identity.Server.Quickstart.Account
                     props);
                 return Redirect(props.RedirectUri);
             }
-            else
-            {
-                // trigger windows auth
-                // since windows auth don't support the redirect uri,
-                // this URL is re-triggered when we call challenge
-                return Challenge(AccountOptions.WindowsAuthenticationSchemeName);
-            }
+
+            // trigger windows auth
+            // since windows auth don't support the redirect uri,
+            // this URL is re-triggered when we call challenge
+            return Challenge(AccountOptions.WindowsAuthenticationSchemeName);
         }
 
-        private async Task<(ApplicationUser user, string provider, string providerUserId, IEnumerable<Claim> claims)> 
-            FindUserFromExternalProviderAsync(AuthenticateResult result)
-        {
+        private async Task<(ApplicationUser user, string provider, string providerUserId, IEnumerable<Claim> claims)>
+            FindUserFromExternalProviderAsync(AuthenticateResult result) {
             var externalUser = result.Principal;
 
             // try to determine the unique id of the external user (issued by the provider)
@@ -453,89 +376,69 @@ namespace Identity.Server.Quickstart.Account
             return (user, provider, providerUserId, claims);
         }
 
-        private async Task<ApplicationUser> AutoProvisionUserAsync(string provider, string providerUserId, IEnumerable<Claim> claims)
-        {
+        private async Task<ApplicationUser> AutoProvisionUserAsync(string provider, string providerUserId,
+            IEnumerable<Claim> claims) {
             // create a list of claims that we want to transfer into our store
             var filtered = new List<Claim>();
 
             // user's display name
             var name = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Name)?.Value ??
-                claims.FirstOrDefault(x => x.Type == ClaimTypes.Name)?.Value;
-            if (name != null)
-            {
+                       claims.FirstOrDefault(x => x.Type == ClaimTypes.Name)?.Value;
+            if (name != null) {
                 filtered.Add(new Claim(JwtClaimTypes.Name, name));
             }
-            else
-            {
+            else {
                 var first = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.GivenName)?.Value ??
-                    claims.FirstOrDefault(x => x.Type == ClaimTypes.GivenName)?.Value;
+                            claims.FirstOrDefault(x => x.Type == ClaimTypes.GivenName)?.Value;
                 var last = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.FamilyName)?.Value ??
-                    claims.FirstOrDefault(x => x.Type == ClaimTypes.Surname)?.Value;
+                           claims.FirstOrDefault(x => x.Type == ClaimTypes.Surname)?.Value;
                 if (first != null && last != null)
-                {
                     filtered.Add(new Claim(JwtClaimTypes.Name, first + " " + last));
-                }
                 else if (first != null)
-                {
                     filtered.Add(new Claim(JwtClaimTypes.Name, first));
-                }
-                else if (last != null)
-                {
-                    filtered.Add(new Claim(JwtClaimTypes.Name, last));
-                }
+                else if (last != null) filtered.Add(new Claim(JwtClaimTypes.Name, last));
             }
 
             // email
             var email = claims.FirstOrDefault(x => x.Type == JwtClaimTypes.Email)?.Value ??
-               claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
-            if (email != null)
-            {
-                filtered.Add(new Claim(JwtClaimTypes.Email, email));
-            }
+                        claims.FirstOrDefault(x => x.Type == ClaimTypes.Email)?.Value;
+            if (email != null) filtered.Add(new Claim(JwtClaimTypes.Email, email));
 
-            var user = new ApplicationUser
-            {
-                UserName = Guid.NewGuid().ToString(),
+            var user = new ApplicationUser {
+                UserName = Guid.NewGuid().ToString()
             };
             var identityResult = await _userManager.CreateAsync(user);
             if (!identityResult.Succeeded) throw new Exception(identityResult.Errors.First().Description);
 
-            if (filtered.Any())
-            {
+            if (filtered.Any()) {
                 identityResult = await _userManager.AddClaimsAsync(user, filtered);
                 if (!identityResult.Succeeded) throw new Exception(identityResult.Errors.First().Description);
             }
 
-            identityResult = await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerUserId, provider));
+            identityResult =
+                await _userManager.AddLoginAsync(user, new UserLoginInfo(provider, providerUserId, provider));
             if (!identityResult.Succeeded) throw new Exception(identityResult.Errors.First().Description);
 
             return user;
         }
 
-        private void ProcessLoginCallbackForOidc(AuthenticateResult externalResult, List<Claim> localClaims, AuthenticationProperties localSignInProps)
-        {
+        private void ProcessLoginCallbackForOidc(AuthenticateResult externalResult, List<Claim> localClaims,
+            AuthenticationProperties localSignInProps) {
             // if the external system sent a session id claim, copy it over
             // so we can use it for single sign-out
             var sid = externalResult.Principal.Claims.FirstOrDefault(x => x.Type == JwtClaimTypes.SessionId);
-            if (sid != null)
-            {
-                localClaims.Add(new Claim(JwtClaimTypes.SessionId, sid.Value));
-            }
+            if (sid != null) localClaims.Add(new Claim(JwtClaimTypes.SessionId, sid.Value));
 
             // if the external provider issued an id_token, we'll keep it for signout
             var id_token = externalResult.Properties.GetTokenValue("id_token");
             if (id_token != null)
-            {
-                localSignInProps.StoreTokens(new[] { new AuthenticationToken { Name = "id_token", Value = id_token } });
-            }
+                localSignInProps.StoreTokens(new[] {new AuthenticationToken {Name = "id_token", Value = id_token}});
         }
 
-        private void ProcessLoginCallbackForWsFed(AuthenticateResult externalResult, List<Claim> localClaims, AuthenticationProperties localSignInProps)
-        {
-        }
+        private void ProcessLoginCallbackForWsFed(AuthenticateResult externalResult, List<Claim> localClaims,
+            AuthenticationProperties localSignInProps) { }
 
-        private void ProcessLoginCallbackForSaml2p(AuthenticateResult externalResult, List<Claim> localClaims, AuthenticationProperties localSignInProps)
-        {
-        }
+        private void ProcessLoginCallbackForSaml2p(AuthenticateResult externalResult, List<Claim> localClaims,
+            AuthenticationProperties localSignInProps) { }
     }
 }

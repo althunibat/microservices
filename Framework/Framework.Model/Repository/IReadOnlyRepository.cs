@@ -5,10 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Framework.Common;
 
-namespace Framework.Model.Repository
-{
-    public interface IReadOnlyRepository<TEntity, TId> where TEntity : IEntity<TId> where TId : IEquatable<TId>
-    {
+namespace Framework.Model.Repository {
+    public interface IReadOnlyRepository<TEntity, TId> where TEntity : IEntity<TId> where TId : IEquatable<TId> {
         Task<PaginatedList<TResult>> GetPagedItems<TResult>(SortDirection sort, string sortBy,
             Expression<Func<TEntity, bool>> filter, Expression<Func<TEntity, TResult>> selector, int pageIndex = 1,
             int pageSize = 10, CancellationToken cancellationToken = default(CancellationToken),

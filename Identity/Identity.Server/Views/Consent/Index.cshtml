@@ -1,12 +1,12 @@
-﻿@using Identity.Server.Quickstart.Consent
-@model Identity.Server.Quickstart.Consent.ConsentViewModel
+﻿@model Identity.Server.Quickstart.Consent.ConsentViewModel
 
 <div class="page-consent">
     <div class="row page-header">
         <div class="col-sm-10">
-            @if (Model.ClientLogoUrl != null)
-            {
-                <div class="client-logo"><img src="@Model.ClientLogoUrl"></div>
+            @if (Model.ClientLogoUrl != null) {
+                <div class="client-logo">
+                    <img src="@Model.ClientLogoUrl">
+                </div>
             }
             <h1>
                 @Model.ClientName
@@ -20,47 +20,42 @@
             @await Html.PartialAsync("_ValidationSummary")
 
             <form asp-action="Index" class="consent-form">
-                <input type="hidden" asp-for="ReturnUrl" />
+                <input type="hidden" asp-for="ReturnUrl"/>
 
                 <div>Uncheck the permissions you do not wish to grant.</div>
-                
-                @if (Model.IdentityScopes.Any())
-                {
+
+                @if (Model.IdentityScopes.Any()) {
                     <div class="panel panel-default consent-buttons">
                         <div class="panel-heading">
                             <span class="glyphicon glyphicon-user"></span>
                             Personal Information
                         </div>
                         <ul class="list-group">
-                            @foreach (var scope in Model.IdentityScopes)
-                            {
+                            @foreach (var scope in Model.IdentityScopes) {
                                 @await Html.PartialAsync("_ScopeListItem", scope)
                             }
                         </ul>
                     </div>
                 }
 
-                @if (Model.ResourceScopes.Any())
-                {
+                @if (Model.ResourceScopes.Any()) {
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <span class="glyphicon glyphicon-tasks"></span>
                             Application Access
                         </div>
                         <ul class="list-group">
-                            @foreach (var scope in Model.ResourceScopes)
-                            {
+                            @foreach (var scope in Model.ResourceScopes) {
                                 @await Html.PartialAsync("_ScopeListItem", scope)
                             }
                         </ul>
                     </div>
                 }
 
-                @if (Model.AllowRememberConsent)
-                {
+                @if (Model.AllowRememberConsent) {
                     <div class="consent-remember">
                         <label>
-                            <input class="consent-scopecheck" asp-for="RememberConsent" />
+                            <input class="consent-scopecheck" asp-for="RememberConsent"/>
                             <strong>Remember My Decision</strong>
                         </label>
                     </div>
@@ -69,8 +64,7 @@
                 <div class="consent-buttons">
                     <button name="button" value="yes" class="btn btn-primary" autofocus>Yes, Allow</button>
                     <button name="button" value="no" class="btn">No, Do Not Allow</button>
-                    @if (Model.ClientUrl != null)
-                    {
+                    @if (Model.ClientUrl != null) {
                         <a class="pull-right btn btn-default" target="_blank" href="@Model.ClientUrl">
                             <span class="glyphicon glyphicon-info-sign"></span>
                             <strong>@Model.ClientName</strong>

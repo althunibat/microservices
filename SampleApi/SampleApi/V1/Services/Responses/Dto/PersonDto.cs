@@ -2,26 +2,21 @@
 using System.Linq;
 using SampleApi.V1.Data.Model;
 
-namespace SampleApi.V1.Services.Responses.Dto
-{
-    public class PersonDto
-    {
-        public long Id { get; }
-        public string Name { get; }
-        public IEnumerable<AddressDto> Address { get; }
-
-        public PersonDto(Person person)
-        {
+namespace SampleApi.V1.Services.Responses.Dto {
+    public class PersonDto {
+        public PersonDto(Person person) {
             Id = person.Id;
             Name = person.Name;
             Address = person.Addresses.Select(x => new AddressDto(x));
         }
+
+        public long Id { get; }
+        public string Name { get; }
+        public IEnumerable<AddressDto> Address { get; }
     }
 
-    public class AddressDto
-    {
-        public AddressDto(Address address)
-        {
+    public class AddressDto {
+        public AddressDto(Address address) {
             Id = address.Id;
             Country = address.Country;
             City = address.City;

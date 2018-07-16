@@ -4,10 +4,8 @@
 
 using IdentityServer4.Models;
 
-namespace Identity.Server.Quickstart.Home
-{
-    public class ErrorViewModel
-    {
+namespace Identity.Server.Quickstart.Home {
+    public class ErrorViewModel {
         public ErrorMessage Error { get; set; }
     }
 }

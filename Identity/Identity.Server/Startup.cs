@@ -26,26 +26,20 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.HealthChecks;
 using Microsoft.Extensions.Options;
 using Nest;
-using Serilog;
 
-namespace Identity.Server
-{
-    public class Startup
-    {
-        private IConfiguration Configuration { get; }
-        private IHostingEnvironment Environment { get; }
-
-        public Startup(IHostingEnvironment env, IConfiguration configuration)
-        {
+namespace Identity.Server {
+    public class Startup {
+        public Startup(IHostingEnvironment env, IConfiguration configuration) {
             Environment = env;
             Configuration = configuration;
         }
 
+        private IConfiguration Configuration { get; }
+        private IHostingEnvironment Environment { get; }
+
         // This method gets called by the runtime. Use this method to add services to the container.
-        public void ConfigureServices(IServiceCollection services)
-        {
-            services.Configure<CookiePolicyOptions>(options =>
-            {
+        public void ConfigureServices(IServiceCollection services) {
+            services.Configure<CookiePolicyOptions>(options => {
                 // This lambda determines whether user consent for non-essential cookies is needed for a given request.
                 options.CheckConsentNeeded = context => true;
                 options.MinimumSameSitePolicy = SameSiteMode.None;
@@ -54,17 +48,17 @@ namespace Identity.Server
             services.Configure<RabbitMqOptions>(Configuration.GetSection("RabbitMqOptions"));
             services.Configure<ElasticSearchOptions>(Configuration.GetSection("ElasticSearchOptions"));
             services.Configure<ConsulOptions>(Configuration.GetSection("ConsulOptions"));
-            var certificate = new X509Certificate2(Path.GetFullPath(Configuration["cert.location"]), Configuration["cert.password"]);
+            var certificate = new X509Certificate2(Path.GetFullPath(Configuration["cert.location"]),
+                Configuration["cert.password"]);
             var connectionString = Configuration.GetConnectionString("identity-db");
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
-        
+
             services
                 .AddDataProtection(opt => opt.ApplicationDiscriminator = "Sso-srv")
                 .PersistKeysToFileSystem(new DirectoryInfo(Path.GetFullPath("cert")))
                 .ProtectKeysWithCertificate(certificate);
 
-            services.AddDbContextPool<ApplicationDbContext>(cfg =>
-            {
+            services.AddDbContextPool<ApplicationDbContext>(cfg => {
                 cfg.UseSqlServer(connectionString, opt => {
                     opt.MigrationsAssembly(migrationsAssembly);
                     opt.EnableRetryOnFailure(10, TimeSpan.FromMilliseconds(100), null);
@@ -75,8 +69,7 @@ namespace Identity.Server
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
-            services.AddIdentityServer(options =>
-                {
+            services.AddIdentityServer(options => {
                     options.Events.RaiseErrorEvents = true;
                     options.Events.RaiseInformationEvents = true;
                     options.Events.RaiseFailureEvents = true;
@@ -87,8 +80,7 @@ namespace Identity.Server
                 .AddSecretParser<JwtBearerClientAssertionSecretParser>()
                 .AddSecretValidator<PrivateKeyJwtSecretValidator>()
                 // this adds the config data from DB (clients, resources)
-                .AddConfigurationStore(options =>
-                {
+                .AddConfigurationStore(options => {
                     options.ConfigureDbContext = b =>
                         b.UseSqlServer(connectionString, opt => {
                             opt.MigrationsAssembly(migrationsAssembly);
@@ -96,8 +88,7 @@ namespace Identity.Server
                         });
                 })
                 // this adds the operational data from DB (codes, tokens, consents)
-                .AddOperationalStore(options =>
-                {
+                .AddOperationalStore(options => {
                     options.ConfigureDbContext = b =>
                         b.UseSqlServer(connectionString, opt => {
                             opt.MigrationsAssembly(migrationsAssembly);
@@ -115,20 +106,16 @@ namespace Identity.Server
                 .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddHealthChecks(ConfigureHealthCheck);
             services.AddMassTransit(ConfigureMasstransit);
-            services.AddSingleton(cp =>
-            {
+            services.AddSingleton(cp => {
                 var options = cp.GetRequiredService<IOptionsSnapshot<RabbitMqOptions>>().Value;
-                var bus = Bus.Factory.CreateUsingRabbitMq(cfg =>
-                {
-                    cfg.Host(new Uri(options.Address), h =>
-                    {
+                var bus = Bus.Factory.CreateUsingRabbitMq(cfg => {
+                    cfg.Host(new Uri(options.Address), h => {
                         h.Username(Configuration["rabbit.username"]);
                         h.Password(Configuration["rabbit.password"]);
                     });
                     cfg.ReceiveEndpoint(options.QueueName, opt => opt.LoadFrom(cp));
                     cfg.UseExtensionsLogging();
-                    cfg.UseRetry(configurator =>
-                    {
+                    cfg.UseRetry(configurator => {
                         configurator.Incremental(10, TimeSpan.FromMilliseconds(200), TimeSpan.FromMilliseconds(10));
                     });
                 });
@@ -140,8 +127,7 @@ namespace Identity.Server
             services.AddSingleton<ISendEndpointProvider>(cp => cp.GetService<IBusControl>());
             services.AddSingleton<IBus>(cp => cp.GetService<IBusControl>());
             services.AddHostedService<MasstransitHostedService>();
-            services.AddSingleton(cp =>
-            {
+            services.AddSingleton(cp => {
                 var options = cp.GetRequiredService<IOptionsSnapshot<ElasticSearchOptions>>().Value;
                 var connectionSettings =
                     new ConnectionSettings(new StaticConnectionPool(options.Uris));
@@ -150,8 +136,7 @@ namespace Identity.Server
             });
             services.AddScoped(c => new ElasticClient(c.GetService<ConnectionSettings>()));
             services.AddHttpContextAccessor();
-            services.AddHsts(options =>
-            {
+            services.AddHsts(options => {
                 options.Preload = true;
                 options.IncludeSubDomains = true;
                 options.MaxAge = TimeSpan.FromDays(60);
@@ -159,49 +144,40 @@ namespace Identity.Server
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
-        {
-            if (env.IsDevelopment())
-            {
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime) {
+            if (env.IsDevelopment()) {
                 app.UseDeveloperExceptionPage();
             }
-            else
-            {
+            else {
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
+
             appLifetime.ApplicationStopping.Register(Program.ConsulConfigCancellationTokenSource.Cancel);
 
             app.UseStaticFiles();
             app.UseIdentityServer();
             app.UseCookiePolicy();
-            app.UseForwardedHeaders(new ForwardedHeadersOptions
-            {
+            app.UseForwardedHeaders(new ForwardedHeadersOptions {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
             app.UseRemoteIpAddressLoggingMiddleware();
             app.UseCorrelationId();
-            app.UseMvc(routes =>
-            {
+            app.UseMvc(routes => {
                 routes.MapRoute(
-                    name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+                    "default",
+                    "{controller=Home}/{action=Index}/{id?}");
             });
-           // SeedData.EnsureSeedData(app.ApplicationServices);
+            // SeedData.EnsureSeedData(app.ApplicationServices);
         }
 
-        private static void ConfigureMasstransit(IServiceCollectionConfigurator cfg)
-        {
-        }
+        private static void ConfigureMasstransit(IServiceCollectionConfigurator cfg) { }
 
-        private static void ConfigureHealthCheck(HealthCheckBuilder checks)
-        {
+        private static void ConfigureHealthCheck(HealthCheckBuilder checks) {
             checks.AddValueTaskCheck("HTTP Endpoint",
                 () => new ValueTask<IHealthCheckResult>(HealthCheckResult.Healthy("The Service is running")));
         }
 
-        private static void ConfigureElasticSearch(ConnectionSettings conn)
-        {
-        }
+        private static void ConfigureElasticSearch(ConnectionSettings conn) { }
     }
 }

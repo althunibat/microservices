@@ -10,9 +10,7 @@ namespace Framework.Api.Middleware {
         private readonly CorrelationIdOptions _options;
 
         public CorrelationIdMiddleware(RequestDelegate next, IOptions<CorrelationIdOptions> options) {
-            if (options == null) {
-                throw new ArgumentNullException(nameof(options));
-            }
+            if (options == null) throw new ArgumentNullException(nameof(options));
 
             _next = next ?? throw new ArgumentNullException(nameof(next));
 
@@ -20,18 +18,14 @@ namespace Framework.Api.Middleware {
         }
 
         public Task Invoke(HttpContext context) {
-            if (context.Request.Headers.TryGetValue(_options.Header, out var correlationId)) {
+            if (context.Request.Headers.TryGetValue(_options.Header, out var correlationId))
                 context.TraceIdentifier = correlationId;
-            }
 
-            if (_options.IncludeInResponse) {
-                // apply the correlation ID to the response header for client side tracking
-                context.Response.OnStarting(() =>
-                {
-                    context.Response.Headers.Add(_options.Header, new[] { context.TraceIdentifier });
+            if (_options.IncludeInResponse)
+                context.Response.OnStarting(() => {
+                    context.Response.Headers.Add(_options.Header, new[] {context.TraceIdentifier});
                     return Task.CompletedTask;
                 });
-            }
 
             return _next(context);
         }

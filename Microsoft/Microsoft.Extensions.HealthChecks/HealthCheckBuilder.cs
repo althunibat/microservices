@@ -4,20 +4,16 @@
 using System;
 using System.Collections.Generic;
 
-namespace Microsoft.Extensions.HealthChecks
-{
-    public class HealthCheckBuilder
-    {
+namespace Microsoft.Extensions.HealthChecks {
+    public class HealthCheckBuilder {
         private readonly Dictionary<string, CachedHealthCheck> _checksByName;
         private readonly HealthCheckGroup _currentGroup;
         private readonly Dictionary<string, HealthCheckGroup> _groups;
 
-        public HealthCheckBuilder()
-        {
+        public HealthCheckBuilder() {
             _checksByName = new Dictionary<string, CachedHealthCheck>(StringComparer.OrdinalIgnoreCase);
             _currentGroup = new HealthCheckGroup(string.Empty, CheckStatus.Unhealthy);
-            _groups = new Dictionary<string, HealthCheckGroup>(StringComparer.OrdinalIgnoreCase)
-            {
+            _groups = new Dictionary<string, HealthCheckGroup>(StringComparer.OrdinalIgnoreCase) {
                 [string.Empty] = _currentGroup
             };
 
@@ -25,10 +21,9 @@ namespace Microsoft.Extensions.HealthChecks
         }
 
         /// <summary>
-        /// This constructor should only be used when creating a grouped health check builder.
+        ///     This constructor should only be used when creating a grouped health check builder.
         /// </summary>
-        public HealthCheckBuilder(HealthCheckBuilder rootBuilder, HealthCheckGroup currentGroup)
-        {
+        public HealthCheckBuilder(HealthCheckBuilder rootBuilder, HealthCheckGroup currentGroup) {
             Guard.ArgumentNotNull(nameof(rootBuilder), rootBuilder);
             Guard.ArgumentNotNull(nameof(currentGroup), currentGroup);
 
@@ -40,28 +35,29 @@ namespace Microsoft.Extensions.HealthChecks
         }
 
         /// <summary>
-        /// Gets the registered checks, indexed by check name.
+        ///     Gets the registered checks, indexed by check name.
         /// </summary>
         public IReadOnlyDictionary<string, CachedHealthCheck> ChecksByName => _checksByName;
 
         /// <summary>
-        /// Gets the current default cache duration used when registering checks.
+        ///     Gets the current default cache duration used when registering checks.
         /// </summary>
         public TimeSpan DefaultCacheDuration { get; private set; }
 
         /// <summary>
-        /// Gets the registered groups, indexed by group name. The root group's name is <see cref="string.Empty"/>.
+        ///     Gets the registered groups, indexed by group name. The root group's name is <see cref="string.Empty" />.
         /// </summary>
         public IReadOnlyDictionary<string, HealthCheckGroup> Groups => _groups;
 
         /// <summary>
-        /// Registers a health check type that will later be resolved via dependency
-        /// injection.
+        ///     Registers a health check type that will later be resolved via dependency
+        ///     injection.
         /// </summary>
-        public HealthCheckBuilder AddCheck<TCheck>(string checkName, TimeSpan cacheDuration) where TCheck : class, IHealthCheck
-        {
+        public HealthCheckBuilder AddCheck<TCheck>(string checkName, TimeSpan cacheDuration)
+            where TCheck : class, IHealthCheck {
             Guard.ArgumentNotNullOrEmpty(nameof(checkName), checkName);
-            Guard.ArgumentValid(!_checksByName.ContainsKey(checkName), nameof(checkName), $"A check with name '{checkName}' has already been registered.");
+            Guard.ArgumentValid(!_checksByName.ContainsKey(checkName), nameof(checkName),
+                $"A check with name '{checkName}' has already been registered.");
 
             var namedCheck = CachedHealthCheck.FromType(checkName, cacheDuration, typeof(TCheck));
 
@@ -72,13 +68,13 @@ namespace Microsoft.Extensions.HealthChecks
         }
 
         /// <summary>
-        /// Registers a concrete health check to the builder.
+        ///     Registers a concrete health check to the builder.
         /// </summary>
-        public HealthCheckBuilder AddCheck(string checkName, IHealthCheck check, TimeSpan cacheDuration)
-        {
+        public HealthCheckBuilder AddCheck(string checkName, IHealthCheck check, TimeSpan cacheDuration) {
             Guard.ArgumentNotNullOrEmpty(nameof(checkName), checkName);
             Guard.ArgumentNotNull(nameof(check), check);
-            Guard.ArgumentValid(!_checksByName.ContainsKey(checkName), nameof(checkName), $"A check with name '{checkName}' has already been registered.");
+            Guard.ArgumentValid(!_checksByName.ContainsKey(checkName), nameof(checkName),
+                $"A check with name '{checkName}' has already been registered.");
 
             var namedCheck = CachedHealthCheck.FromHealthCheck(checkName, cacheDuration, check);
 
@@ -89,24 +85,28 @@ namespace Microsoft.Extensions.HealthChecks
         }
 
         /// <summary>
-        /// Creates a new health check group, to which you can add one or more health
-        /// checks. Uses <see cref="CheckStatus.Unhealthy"/> when the group is
-        /// partially successful.
+        ///     Creates a new health check group, to which you can add one or more health
+        ///     checks. Uses <see cref="CheckStatus.Unhealthy" /> when the group is
+        ///     partially successful.
         /// </summary>
-        public HealthCheckBuilder AddHealthCheckGroup(string groupName, Action<HealthCheckBuilder> groupChecks)
-            => AddHealthCheckGroup(groupName, groupChecks, CheckStatus.Unhealthy);
+        public HealthCheckBuilder AddHealthCheckGroup(string groupName, Action<HealthCheckBuilder> groupChecks) {
+            return AddHealthCheckGroup(groupName, groupChecks, CheckStatus.Unhealthy);
+        }
 
         /// <summary>
-        /// Creates a new health check group, to which you can add one or more health
-        /// checks.
+        ///     Creates a new health check group, to which you can add one or more health
+        ///     checks.
         /// </summary>
-        public HealthCheckBuilder AddHealthCheckGroup(string groupName, Action<HealthCheckBuilder> groupChecks, CheckStatus partialSuccessStatus)
-        {
+        public HealthCheckBuilder AddHealthCheckGroup(string groupName, Action<HealthCheckBuilder> groupChecks,
+            CheckStatus partialSuccessStatus) {
             Guard.ArgumentNotNullOrEmpty(nameof(groupName), groupName);
             Guard.ArgumentNotNull(nameof(groupChecks), groupChecks);
-            Guard.ArgumentValid(partialSuccessStatus != CheckStatus.Unknown, nameof(partialSuccessStatus), "Check status 'Unknown' is not valid for partial success.");
-            Guard.ArgumentValid(!_groups.ContainsKey(groupName), nameof(groupName), $"A group with name '{groupName}' has already been registered.");
-            Guard.OperationValid(_currentGroup.GroupName == string.Empty, "Nested groups are not supported by HealthCheckBuilder.");
+            Guard.ArgumentValid(partialSuccessStatus != CheckStatus.Unknown, nameof(partialSuccessStatus),
+                "Check status 'Unknown' is not valid for partial success.");
+            Guard.ArgumentValid(!_groups.ContainsKey(groupName), nameof(groupName),
+                $"A group with name '{groupName}' has already been registered.");
+            Guard.OperationValid(_currentGroup.GroupName == string.Empty,
+                "Nested groups are not supported by HealthCheckBuilder.");
 
             var group = new HealthCheckGroup(groupName, partialSuccessStatus);
             _groups.Add(groupName, group);
@@ -117,16 +117,15 @@ namespace Microsoft.Extensions.HealthChecks
             return this;
         }
 
-        public HealthCheckBuilder WithDefaultCacheDuration(TimeSpan duration)
-        {
-            Guard.ArgumentValid(duration >= TimeSpan.Zero, nameof(duration), "Duration must be zero (disabled) or a positive duration.");
+        public HealthCheckBuilder WithDefaultCacheDuration(TimeSpan duration) {
+            Guard.ArgumentValid(duration >= TimeSpan.Zero, nameof(duration),
+                "Duration must be zero (disabled) or a positive duration.");
 
             DefaultCacheDuration = duration;
             return this;
         }
 
-        public HealthCheckBuilder WithPartialSuccessStatus(CheckStatus partiallyHealthyStatus)
-        {
+        public HealthCheckBuilder WithPartialSuccessStatus(CheckStatus partiallyHealthyStatus) {
             _currentGroup.PartiallyHealthyStatus = partiallyHealthyStatus;
 
             return this;

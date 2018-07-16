@@ -11,6 +11,7 @@ namespace Framework.Services.Contracts.Http {
             Errors = errors;
             TimeStamp = DateTimeOffset.Now;
         }
+
         public DateTimeOffset TimeStamp { get; }
 
         public IEnumerable<Error> Errors { get; }

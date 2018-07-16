@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Framework.Model.Repository
-{
+namespace Framework.Model.Repository {
     public interface IRepository<in TEntity, TId>
         where TId : IEquatable<TId>
-        where TEntity : IEntity<TId>
-    {
+        where TEntity : IEntity<TId> {
         Task Add(TEntity item, CancellationToken cancellationToken = default(CancellationToken));
         Task Edit(TEntity item, CancellationToken cancellationToken = default(CancellationToken));
         Task Delete(TEntity item, CancellationToken cancellationToken = default(CancellationToken));

@@ -4,10 +4,8 @@
 
 using System.Collections.Generic;
 
-namespace Identity.Server.Quickstart.Consent
-{
-    public class ConsentInputModel
-    {
+namespace Identity.Server.Quickstart.Consent {
+    public class ConsentInputModel {
         public string Button { get; set; }
         public IEnumerable<string> ScopesConsented { get; set; }
         public bool RememberConsent { get; set; }

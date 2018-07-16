@@ -3,14 +3,11 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.Extensions.HealthChecks
-{
-    public class HealthCheckGroup
-    {
+namespace Microsoft.Extensions.HealthChecks {
+    public class HealthCheckGroup {
         private CheckStatus _partialSuccessStatus;
 
-        public HealthCheckGroup(string groupName, CheckStatus partialSuccessStatus)
-        {
+        public HealthCheckGroup(string groupName, CheckStatus partialSuccessStatus) {
             Guard.ArgumentNotNull(nameof(groupName), groupName);
 
             GroupName = groupName;
@@ -23,12 +20,11 @@ namespace Microsoft.Extensions.HealthChecks
 
         public string GroupName { get; }
 
-        public CheckStatus PartiallyHealthyStatus
-        {
+        public CheckStatus PartiallyHealthyStatus {
             get => _partialSuccessStatus;
-            internal set
-            {
-                Guard.ArgumentValid(value != CheckStatus.Unknown, nameof(value), "Check status 'Unknown' is not valid for partial success.");
+            internal set {
+                Guard.ArgumentValid(value != CheckStatus.Unknown, nameof(value),
+                    "Check status 'Unknown' is not valid for partial success.");
 
                 _partialSuccessStatus = value;
             }
