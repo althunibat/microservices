@@ -1,21 +1,24 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
+using App.Metrics;
+using App.Metrics.AspNetCore;
+using App.Metrics.Formatters;
+using App.Metrics.Formatters.Prometheus;
 using Identity.Server.Configuration;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
-using Serilog.Sinks.Elasticsearch;
 using Winton.Extensions.Configuration.Consul;
 
 namespace Identity.Server
 {
     public class Program
     {
-        public static readonly CancellationTokenSource ConsulConfigCancellationTokenSource = new CancellationTokenSource();
+        internal static readonly CancellationTokenSource ConsulConfigCancellationTokenSource = new CancellationTokenSource();
+        private static IMetricsRoot Metrics { get; set; }
 
         public static int Main(string[] args)
         {
@@ -37,10 +40,20 @@ namespace Identity.Server
             }
         }
 
-        private static IWebHost BuildWebHost(string[] args)
-        {
+        private static IWebHost BuildWebHost(string[] args) {
+            Metrics = AppMetrics.CreateDefaultBuilder()
+                .OutputMetrics.AsPrometheusProtobuf()
+                .Build();
+
             var builder = new WebHostBuilder()
                 .UseContentRoot(Directory.GetCurrentDirectory())
+                .UseMetrics(options =>
+                {
+                    options.EndpointOptions = endpointsOptions => {
+                        endpointsOptions.MetricsTextEndpointEnabled = false;
+                        endpointsOptions.MetricsEndpointOutputFormatter = Metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
+                    };
+                })
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
                     var hostingEnvironment = hostingContext.HostingEnvironment;
@@ -92,17 +105,10 @@ namespace Identity.Server
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Information)
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
                 .MinimumLevel.Override("Default", LogEventLevel.Information)
                 .Enrich.FromLogContext()
-                .WriteTo.Elasticsearch(
-                    new ElasticsearchSinkOptions(config["ElasticSearchOptions:Urls"].Split(';')
-                        .Select(url => new Uri(url)))
-                    {
-                        AutoRegisterTemplate = true,
-                        BufferBaseFilename = $"logs/{config["ConsulOptions:ServiceName"]}-logs",
-                        TypeName = config["ConsulOptions:ServiceName"]
-                    })
                 .WriteTo.Console(outputTemplate: format)
                 .CreateLogger();
         }

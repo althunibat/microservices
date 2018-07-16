@@ -10,5 +10,6 @@ this code repository will be updated along with articles published on my linkedi
 - masstransit  / rabbitmq http://masstransit-project.com/
 - ef core repository pattern
 - audit through events in Elasticsearch.
+- on 16/07/18 - Web Metrics implementation using App Metrics https://www.app-metrics.io/ and Prometheus
 
  

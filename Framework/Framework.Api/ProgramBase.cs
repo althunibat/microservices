@@ -1,8 +1,11 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
+using App.Metrics;
+using App.Metrics.AspNetCore;
+using App.Metrics.Formatters;
+using App.Metrics.Formatters.Prometheus;
 using Framework.Api.Configuration;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -15,6 +18,7 @@ namespace Framework.Api
     public static class ProgramBase<TStart> where TStart : StartupBase<TStart>
     {
         public static readonly CancellationTokenSource ConsulConfigCancellationTokenSource = new CancellationTokenSource();
+        private static IMetricsRoot Metrics { get; set; }
         public static int Run(string[] args)
         {
             try
@@ -36,9 +40,19 @@ namespace Framework.Api
 
         private static IWebHost BuildWebHost(string[] args)
         {
+            Metrics = AppMetrics.CreateDefaultBuilder()
+                .OutputMetrics.AsPrometheusProtobuf()
+                .Build();
             var builder = new WebHostBuilder()
                 .UseKestrel(options => options.AddServerHeader = false)
                 .UseContentRoot(Directory.GetCurrentDirectory())
+                .UseMetrics(options =>
+                {
+                    options.EndpointOptions = endpointsOptions => {
+                        endpointsOptions.MetricsTextEndpointEnabled = false;
+                        endpointsOptions.MetricsEndpointOutputFormatter = Metrics.OutputMetricsFormatters.GetType<MetricsPrometheusProtobufOutputFormatter>();
+                    };
+                })
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
                     var hostingEnvironment = hostingContext.HostingEnvironment;
@@ -84,8 +98,11 @@ namespace Framework.Api
             var format = "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level}] [" + Environment.MachineName +
                          "] {SourceContext}  [{Address}] [{RequestId}] {Message:lj}{NewLine}{Exception}{NewLine}";
             Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
+                .MinimumLevel.Debug()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Information)
                 .MinimumLevel.Override("System", LogEventLevel.Warning)
+                .MinimumLevel.Override("Default", LogEventLevel.Information)
                 .Enrich.FromLogContext()
                 .WriteTo.Console(outputTemplate: format)
                 .CreateLogger();

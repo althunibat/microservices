@@ -21,8 +21,6 @@ using Microsoft.Extensions.Options;
 using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using Prometheus;
-using Serilog;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerUI;
 
@@ -59,13 +57,13 @@ namespace Framework.Api
                 .AddVersionedApiExplorer(o => o.GroupNameFormat = "'v'VVV");
 
             services.AddMvc()
-                  .AddJsonOptions(options =>
-                  {
-                      options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
-                      options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
-                      options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-                  })
-                  .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+                .AddJsonOptions(options => {
+                    options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                    options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
+                    options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+                })
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1)
+                .AddMetrics();
             services.AddApiVersioning(o => o.ReportApiVersions = true);
             services.AddSwaggerGen(options =>
             {
@@ -134,14 +132,12 @@ namespace Framework.Api
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
             appLifetime.ApplicationStopping.Register(ProgramBase<TStart>.ConsulConfigCancellationTokenSource.Cancel);
-            //appLifetime.ApplicationStopped.Register(Log.CloseAndFlush);
             app.UseCors(opt =>
             {
                 opt.AllowAnyHeader();
                 opt.AllowAnyMethod();
                 opt.AllowAnyOrigin();
             });
-            app.UseMetricServer();
             app.UseCorrelationId();
             app.UseResponseCompression();
             app.UseMvc();

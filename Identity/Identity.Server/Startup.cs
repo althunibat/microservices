@@ -54,7 +54,6 @@ namespace Identity.Server
             services.Configure<RabbitMqOptions>(Configuration.GetSection("RabbitMqOptions"));
             services.Configure<ElasticSearchOptions>(Configuration.GetSection("ElasticSearchOptions"));
             services.Configure<ConsulOptions>(Configuration.GetSection("ConsulOptions"));
-            Console.WriteLine($"cert.location:{Configuration["cert.location"]}");
             var certificate = new X509Certificate2(Path.GetFullPath(Configuration["cert.location"]), Configuration["cert.password"]);
             var connectionString = Configuration.GetConnectionString("identity-db");
             var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
@@ -111,7 +110,9 @@ namespace Identity.Server
                 });
 
 
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddMvc()
+                .AddMetrics()
+                .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddHealthChecks(ConfigureHealthCheck);
             services.AddMassTransit(ConfigureMasstransit);
             services.AddSingleton(cp =>
@@ -170,7 +171,6 @@ namespace Identity.Server
                 app.UseHsts();
             }
             appLifetime.ApplicationStopping.Register(Program.ConsulConfigCancellationTokenSource.Cancel);
-            appLifetime.ApplicationStopped.Register(Log.CloseAndFlush);
 
             app.UseStaticFiles();
             app.UseIdentityServer();
