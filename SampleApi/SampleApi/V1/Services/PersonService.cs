@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Framework.Common;
-using Framework.Model.Repository;
+using Framework.Model.Data;
 using Framework.Services.Contracts.Http;
 using Framework.Services.Core;
 using MassTransit;

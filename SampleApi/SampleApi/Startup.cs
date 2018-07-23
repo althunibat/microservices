@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Reflection;
-using Framework.Model.Repository;
+using Framework.Model.Data;
 using MassTransit.ExtensionsDependencyInjectionIntegration;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;

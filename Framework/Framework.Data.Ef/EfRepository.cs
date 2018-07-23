@@ -6,7 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Framework.Common;
 using Framework.Model;
-using Framework.Model.Repository;
+using Framework.Model.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace Framework.Data.Ef {
