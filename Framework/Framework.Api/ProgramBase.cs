@@ -65,16 +65,17 @@ namespace Framework.Api {
                     if (args != null)
                         config.AddCommandLine(args);
                     var jsonCfg = config.Build();
-                    config.AddConsul(jsonCfg["ConsulOptions:ServiceName"], ConsulConfigCancellationTokenSource.Token,
-                        opt => {
-                            opt.ReloadOnChange = true;
-                            opt.Optional = true;
-                            opt.ConsulConfigurationOptions = cfg => {
-                                cfg.Address = new Uri(jsonCfg["ConsulOptions:HttpEndpoint"]);
-                                cfg.Datacenter = jsonCfg["ConsulOptions:Datacenter"];
-                            };
-                        }
-                    );
+                    if (!string.IsNullOrWhiteSpace(jsonCfg["ConsulOptions:ServiceName"]))
+                        config.AddConsul(jsonCfg["ConsulOptions:ServiceName"], ConsulConfigCancellationTokenSource.Token,
+                            opt => {
+                                opt.ReloadOnChange = true;
+                                opt.Optional = true;
+                                opt.ConsulConfigurationOptions = cfg => {
+                                    cfg.Address = new Uri(jsonCfg["ConsulOptions:HttpEndpoint"]);
+                                    cfg.Datacenter = jsonCfg["ConsulOptions:Datacenter"];
+                                };
+                            }
+                        );
                     InitializeLogs(config.Build());
                 })
                 .UseDefaultServiceProvider((ctx, opt) => { })

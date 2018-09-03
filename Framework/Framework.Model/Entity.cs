@@ -20,7 +20,7 @@ namespace Framework.Model {
         public override bool Equals(object obj) {
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj.GetType() == GetType() && Equals((IEntity<TId>) obj);
+            return obj.GetType() == GetType() && Equals((IEntity<TId>)obj);
         }
 
         public override int GetHashCode() {
@@ -37,7 +37,10 @@ namespace Framework.Model {
     }
 
     public abstract class Entity : Entity<long> {
-        protected Entity(long id) : base(id) { }
+        protected Entity(long id) : base(id) {
+            if (id < 0)
+                throw new ArgumentOutOfRangeException(nameof(id));
+        }
 
         protected Entity() { }
     }

@@ -1,9 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Framework.Common;
 
 namespace Framework.Model {
     public class EntityResult {
         private EntityResult(params Error[] errors) {
+            if(errors is null || !errors.Any())
+                throw new ArgumentOutOfRangeException(nameof(errors));
             Errors = errors;
         }
 
